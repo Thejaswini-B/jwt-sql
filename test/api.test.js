@@ -75,7 +75,7 @@ describe("API Tests", () => {
         .post("/fooditem")
 
         .send({
-          itemname: "Biryani 14",
+          itemname: "Biryani 15",
           category: "Non-veg",
           price: "500",
         })
