@@ -4,12 +4,13 @@ const PORT = 3004;
 const path = require("path");
 const { open } = require("sqlite");
 const bcrypt = require("bcrypt");
+
 app.use(express.json());
 const sqlite3 = require("sqlite3");
 const jwt = require("jsonwebtoken"); // token for registred user
 const dbPath = path.join(__dirname, "user.db");
 
-// ******************************************
+// *******************************************************
 const Redis = require("ioredis");
 const redisClient = new Redis();
 
@@ -21,12 +22,22 @@ const dbConnection = async () => {
       filename: dbPath,
       driver: sqlite3.Database,
     });
+    // console.log("DB Connected");
+    // app.listen(PORT, () => {
+    //   console.log("Server is running at", PORT);
+    // });
+    if (!app.get("isListening")) {
+      app.listen(PORT, () => {
+        console.log("Server is running at", PORT);
+      });
+
+      // Mark that the server is now listening
+      app.set("isListening", true);
+    }
+
     console.log("DB Connected");
-    app.listen(PORT, () => {
-      console.log("Server is running at", PORT);
-    });
   } catch (err) {
-    console.log("Unable to conneect database");
+    console.log("Unable to connect database");
   }
 };
 
@@ -35,10 +46,10 @@ const jwtSecret = "Secret_key";
 const verifyToken = async (req, res, next) => {
   let jwtToken = await redisClient.get("authorizationToken");
   // let jwtToken;
-  // const authHeader = req.headers["authorization"];
-  // if (authHeader !== undefined) {
-  //   jwtToken = authHeader.split(" ")[1];
-  // }
+  const authHeader = req.headers["authorization"];
+  if (authHeader !== undefined) {
+    jwtToken = authHeader.split(" ")[1];
+  }
   if (jwtToken === undefined) {
     res.send("Invalid Access token");
   } else {
@@ -73,6 +84,7 @@ app.get("/userprofile", verifyToken, async (req, res) => {
 app.post("/userpost", async (req, res) => {
   const { name, email, password, address } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
+
   //   console.log(hashedPassword);
   const checkUserQuery = `SELECT * from user where name='${name}' ;`;
 
@@ -94,8 +106,8 @@ app.post("/userpost", async (req, res) => {
     res.json({ user: dataToInsert });
     console.log(dataToInsert);
   } else {
-    console.log("USer already exists");
-    res.json({ err: "user already exists" });
+    console.log("User already exists");
+    res.json({ error: "user already exists" });
   }
 });
 // ****************************************************************************************
@@ -153,3 +165,5 @@ app.get("/food", verifyToken, async (req, res) => {
   console.log("Getting all food items");
   res.send(food);
 });
+
+module.exports = { app, dbConnection, verifyToken };
